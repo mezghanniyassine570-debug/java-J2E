@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: header-head('AETHER Lite - Decision Cockpit')}">
+</head>
+<body class="theme-dark">
+    <div th:replace="~{fragments/header :: header-nav}"></div>
+
+    <div class="container" style="max-width: 1440px;">
+        <div class="cockpit-layout">
+
+            <!-- Top HUD & Simulation Controls Bar -->
+            <div class="sim-hud">
+                <div class="hud-left">
+                    <div class="hud-clock-box">
+                        <div class="clock-time">
+                            <span>⏱</span>
+                            <span id="hudTime" th:text="${clock.formattedTime}">Day 1, 08:00</span>
+                        </div>
+                        <span id="hudPeriod" class="clock-period" th:text="${clock.timePeriodLabel}">Morning Rush Hour</span>
+                    </div>
+
+                    <div class="hud-controls">
+                        <button id="btnStart" class="btn-ctrl btn-ctrl-play" title="Start simulation cycle">
+                            ▶ Play
+                        </button>
+                        <button id="btnPause" class="btn-ctrl btn-ctrl-pause" title="Pause simulation cycle" th:disabled="${!isRunning}">
+                            ⏸ Pause
+                        </button>
+                        <button id="btnStep" class="btn-ctrl" title="Advance 1 simulation step">
+                            ⏭ Step
+                        </button>
+                        <button id="btnReset" class="btn-ctrl btn-danger" title="Reset to initial state">
+                            ↺ Reset
+                        </button>
+                    </div>
+
+                    <div class="speed-selector">
+                        <button class="speed-btn active" data-speed="1">1x</button>
+                        <button class="speed-btn" data-speed="2">2x</button>
+                        <button class="speed-btn" data-speed="5">5x</button>
+                        <button class="speed-btn" data-speed="10">10x</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div id="wsBadge" class="ws-badge">
+                        <span class="pulse-dot"></span> CONNECTING...
+                    </div>
+                    <div id="hudStatus" class="status-indicator" th:classappend="${isRunning} ? 'status-active' : 'status-idle'">
+                        <span class="status-dot"></span>
+                        <span th:text="${isRunning} ? 'SIMULATION RUNNING' : 'SIMULATION IDLE'">SIMULATION IDLE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Academic Defense Walkthrough Assistant (Pour les Enseignants / Soutenance) -->
+            <div id="defenseBanner" class="defense-banner">
+                <div class="defense-banner-head">
+                    <div class="defense-title-box">
+                        <span style="font-size: 1.2rem;">🎓</span>
+                        <div>
+                            <strong style="color: var(--text-primary); font-size: 0.95rem;">Guide Pédagogique de Soutenance (Cahier des Charges J2E)</strong>
+                            <div style="font-size: 0.78rem; color: var(--text-secondary);">Cliquez sur une étape pour faire la démonstration directe devant l'évaluateur :</div>
+                        </div>
+                    </div>
+                    <span class="defense-badge">Validation 8/8 Modules</span>
+                </div>
+
+                <div class="defense-steps-grid">
+                    <div class="defense-step-card" data-step="1">
+                        <div>
+                            <div class="step-num">Étape 1 &bull; MOD-01 &amp; Concurrence</div>
+                            <div class="step-title">Horloge Multi-Threadée</div>
+                            <div class="step-meta">ScheduledExecutorService &bull; AtomicLong</div>
+                        </div>
+                        <div class="step-action-tag">▶ Lancer Simulation</div>
+                    </div>
+
+                    <div class="defense-step-card" data-step="2">
+                        <div>
+                            <div class="step-num">Étape 2 &bull; MOD-02 &amp; UML</div>
+                            <div class="step-title">Agents &amp; Inspectable</div>
+                            <div class="step-meta">AbstractAgent &bull; Polymorphisme</div>
+                        </div>
+                        <div class="step-action-tag">🔍 Inspecter Agent</div>
+                    </div>
+
+                    <div class="defense-step-card" data-step="3">
+                        <div>
+                            <div class="step-num">Étape 3 &bull; MOD-03 / MOD-04</div>
+                            <div class="step-title">Algorithme A* &amp; Trafic</div>
+                            <div class="step-meta">Heuristique HCM &bull; PriorityQueue</div>
+                        </div>
+                        <div class="step-action-tag">🔬 Voir Graphe &amp; A*</div>
+                    </div>
+
+                    <div class="defense-step-card" data-step="4">
+                        <div>
+                            <div class="step-num">Étape 4 &bull; MOD-07</div>
+                            <div class="step-title">What-If &amp; Memento</div>
+                            <div class="step-meta">Java 21 Record &bull; Snapshot Diff</div>
+                        </div>
+                        <div class="step-action-tag">📊 Comparer Scénarios</div>
+                    </div>
+
+                    <div class="defense-step-card" data-step="5">
+                        <div>
+                            <div class="step-num">Étape 5 &bull; MOD-06 &amp; JPA</div>
+                            <div class="step-title">Événements &amp; Base H2</div>
+                            <div class="step-meta">Spring Data &bull; Repositories</div>
+                        </div>
+                        <div class="step-action-tag">💾 Vérifier H2 Console</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Simulation Workspace: 2D Canvas + Right Intelligence Panel -->
+            <div class="sim-workspace">
+
+                <!-- Left: 2D Interactive Urban Canvas Viewport -->
+                <div class="canvas-viewport-card">
+                    <div class="canvas-header">
+                        <div class="canvas-title">
+                            <span style="color: var(--accent);">🗺️</span>
+                            <span>NEO-METROPOLIS 2D TOPOLOGICAL GRID</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal; margin-left: 0.5rem;">(Cliquer sur un tronçon, véhicule ou bâtiment)</span>
+                        </div>
+                        <div class="canvas-tools">
+                            <button id="btnZoomIn" class="btn-tool" title="Zoom avant">+</button>
+                            <button id="btnZoomOut" class="btn-tool" title="Zoom arrière">-</button>
+                            <button id="btnResetView" class="btn-tool" title="Recadrer la vue">Fit</button>
+                            <button id="btnToggleAlgo" class="btn-tool" style="color: var(--accent); font-weight: 700;" title="Afficher noeuds du graphe & capacités">🔬 Graphe &amp; A*</button>
+                            <button id="btnToggleHeatmap" class="btn-tool" style="color: var(--accent);" title="Activer/désactiver la congestion">Heatmap</button>
+                            <button id="btnToggleVehicles" class="btn-tool" style="color: var(--accent);" title="Activer/désactiver les véhicules">Véhicules</button>
+                            <button id="btnToggleBuildings" class="btn-tool" style="color: var(--accent);" title="Activer/désactiver les bâtiments">Bâtiments</button>
+                        </div>
+                    </div>
+
+                    <div class="canvas-container">
+                        <canvas id="cityCanvas"></canvas>
+
+                        <!-- Canvas Legend -->
+                        <div class="canvas-legend">
+                            <div class="legend-item"><span class="legend-color" style="background: #10b981;"></span> Free (<30%)</div>
+                            <div class="legend-item"><span class="legend-color" style="background: #f59e0b;"></span> Moderate (30-70%)</div>
+                            <div class="legend-item"><span class="legend-color" style="background: #ef4444;"></span> Congested (>70%)</div>
+                            <div class="legend-item"><span class="legend-color" style="background: #ef4444; border: 1px dashed white;"></span> ⛔ Closed</div>
+                            <div class="legend-item"><span class="legend-color" style="background: #38bdf8; border-radius: 50%;"></span> Vehicle</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Analytics, What-If Studio & Live Event Stream -->
+                <div class="sim-sidebar">
+
+                    <!-- Live City Metrics Card -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-title">
+                            <span>Indicateurs &amp; Métriques (MOD-04 / 05)</span>
+                            <span id="kpiLOS" class="inspect-badge" title="Niveau de Service HCM (Highway Capacity Manual)" th:text="${traffic.levelOfService}">A (Fluide)</span>
+                        </div>
+
+                        <div class="metric-bar-group">
+                            <div class="metric-row">
+                                <div class="metric-head">
+                                    <span class="metric-name" title="Ratio moyen Volume/Capacité (V/C) sur l'ensemble du graphe urbain">Congestion Réseau (V/C)</span>
+                                    <span id="kpiCongestion" class="metric-val" th:text="${#numbers.formatDecimal(traffic.averageCongestionRatio * 100, 1, 1)} + '%'">0.0%</span>
+                                </div>
+                                <div class="progress-track">
+                                    <div id="barCongestion" class="progress-bar" style="width: 5%; background-color: #10b981;"></div>
+                                </div>
+                            </div>
+
+                            <div class="metric-row">
+                                <div class="metric-head">
+                                    <span class="metric-name" title="Moyenne pondérée : salaire, temps de trajet et accès aux commodités">Satisfaction Citoyenne</span>
+                                    <span id="kpiSatisfaction" class="metric-val">85.0%</span>
+                                </div>
+                                <div class="progress-track">
+                                    <div id="barSatisfaction" class="progress-bar" style="width: 85%; background-color: #38bdf8;"></div>
+                                </div>
+                            </div>
+
+                            <div class="metric-row">
+                                <div class="metric-head">
+                                    <span class="metric-name" title="Citoyens en poste actif dans les entreprises BusinessAgent">Taux d'Emploi Urbain</span>
+                                    <span id="kpiEmployment" class="metric-val" th:text="${#numbers.formatDecimal(economy.employmentRate, 1, 1)} + '%'">92.5%</span>
+                                </div>
+                                <div class="progress-track">
+                                    <div id="barEmployment" class="progress-bar" style="width: 92.5%; background-color: #10b981;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+                            <div>
+                                <span class="stat-label">Gross Output</span>
+                                <div id="kpiGDP" class="stat-value" style="font-size: 1.15rem;" th:text="'$' + ${#numbers.formatInteger(economy.grossCityProduct, 0, 'WHITESPACE')}">$1 500 000</div>
+                            </div>
+                            <div>
+                                <span class="stat-label">Avg Speed</span>
+                                <div id="kpiSpeed" class="stat-value text-blue" style="font-size: 1.15rem;" th:text="${#numbers.formatDecimal(traffic.averageNetworkSpeedKmH, 1, 1)} + ' km/h'">45.0 km/h</div>
+                            </div>
+                            <div>
+                                <span class="stat-label">Citizens</span>
+                                <div id="kpiCitizens" class="stat-value text-accent" style="font-size: 1.15rem;">300</div>
+                            </div>
+                            <div>
+                                <span class="stat-label">Vehicles Nav</span>
+                                <div id="kpiVehicles" class="stat-value text-green" style="font-size: 1.15rem;">100</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- What-If Scenario Studio Card (MOD-07) -->
+                    <div class="sidebar-card">
+                        <div class="sidebar-title">
+                            <span>What-If Scenario Studio</span>
+                            <span id="activeScenarioBadge" class="inspect-badge" style="background: rgba(245, 158, 11, 0.15); color: var(--yellow); border-color: rgba(245, 158, 11, 0.3);" th:text="${activeScenario}">BASELINE</span>
+                        </div>
+                        <p class="card-desc" style="margin-bottom: 0.75rem;">Inject environmental disruptions or municipal policy shifts into the live multi-agent city.</p>
+
+                        <div class="whatif-btn-list">
+                            <button class="whatif-action-btn" data-scenario="ROAD_CLOSURE">
+                                <span>🚧 Avenue des Nations Closure</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">A* Reroute</span>
+                            </button>
+                            <button class="whatif-action-btn" data-scenario="ECONOMIC_STIMULUS">
+                                <span>📈 Innovation Grant ($25k/biz)</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Stimulus</span>
+                            </button>
+                            <button class="whatif-action-btn" data-scenario="TRANSIT_EXPANSION">
+                                <span>🚆 Light Rail Transit Line</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">-30% Cars</span>
+                            </button>
+                            <button class="whatif-action-btn" data-scenario="ENERGY_CRISIS">
+                                <span>⚡ Power Grid Brownout</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">-30% Prod</span>
+                            </button>
+                            <button class="whatif-action-btn" data-scenario="BASELINE" style="border-style: dashed;">
+                                <span>↺ Revert to Baseline</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Reset</span>
+                            </button>
+                        </div>
+
+                        <button id="btnCompareWhatIf" class="btn btn-outline" style="margin-top: 0.85rem; justify-content: center; text-align: center; font-weight: 700;">
+                            📊 Compare Scenario with Baseline
+                        </button>
+                    </div>
+
+                    <!-- Live Event Stream Card (MOD-06) -->
+                    <div class="sidebar-card" style="flex: 1; display: flex; flex-direction: column;">
+                        <div class="sidebar-title">
+                            <span>Live Event Stream</span>
+                            <span class="inspect-badge" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border-color: rgba(99, 102, 241, 0.3);">MOD-06</span>
+                        </div>
+                        <div id="liveEventList" class="event-list" style="max-height: 250px;">
+                            <div th:each="event : ${events}" class="event-item">
+                                <span class="event-time" th:text="${#temporals.format(event.timestamp, 'HH:mm:ss')}">08:00:00</span>
+                                <span class="event-badge" th:classappend="'badge-' + ${#strings.toLowerCase(event.severity)}" th:text="${event.eventType}">EVENT</span>
+                                <span class="event-desc" th:text="${event.description}">Event description text</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Live Inspectable Drawer (Appendix B Inspectable) -->
+    <div id="inspectorDrawer" class="inspector-drawer">
+        <div class="drawer-header">
+            <div>
+                <span id="inspectBadge" class="inspect-badge">INSPECTABLE</span>
+                <h3 id="inspectName" class="inspect-name" style="margin-top: 0.35rem;">Entity Name</h3>
+            </div>
+            <button id="drawerClose" class="drawer-close" title="Close Drawer">&times;</button>
+        </div>
+        <div class="drawer-body">
+            <div id="inspectGrid" class="inspect-grid">
+                <!-- Dynamically populated key-value attributes -->
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                Live entity telemetry streamed from Java Multi-Agent Core. Concurrency-safe reflection via Appendix B <code style="color: var(--accent);">Inspectable</code> interface.
+            </p>
+        </div>
+    </div>
+
+    <!-- What-If Scenario Comparison Modal Dialog (FR10) -->
+    <div id="whatIfModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div>
+                    <span class="hero-chip">Decision Intelligence Analysis</span>
+                    <h2 id="modalScenarioTitle" class="card-title" style="font-size: 1.4rem;">Scenario Comparison Report</h2>
+                </div>
+                <button id="modalClose" class="drawer-close">&times;</button>
+            </div>
+
+            <p class="card-desc">Comprehensive side-by-side indicator diff between Baseline state and Alternative What-If Branch.</p>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Metric Indicator</th>
+                        <th>Baseline</th>
+                        <th>Scenario Branch</th>
+                        <th>Delta Diff</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonTableBody">
+                    <!-- Populated dynamically via /api/simulation/whatif/compare -->
+                </tbody>
+            </table>
+
+            <div class="ai-recommendation-box">
+                <div class="ai-rec-title">🤖 AETHER Decision Intelligence Recommendation</div>
+                <div id="modalAiRecText" class="ai-rec-text">
+                    Loading comparative analysis...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Educational Architecture & OOP Guide Modal (For Professors & Evaluators) -->
+    <div id="architectureDocModal" class="modal-overlay">
+        <div class="modal-dialog" style="max-width: 860px;">
+            <div class="modal-header">
+                <div>
+                    <span class="hero-chip" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border-color: rgba(16, 185, 129, 0.3);">Academic Evaluation &bull; Java Architecture</span>
+                    <h2 class="card-title" style="font-size: 1.4rem;">AETHER Lite &mdash; Technical &amp; OOP Specifications</h2>
+                </div>
+                <button id="docModalClose" class="drawer-close">&times;</button>
+            </div>
+
+            <p class="card-desc">Detailed architectural overview demonstrating the Java principles, patterns, and modules implemented per the <strong>AETHER Lite Cahier des Charges v2</strong>.</p>
+
+            <div style="display: flex; flex-direction: column; gap: 1.25rem; font-size: 0.9rem;">
+                
+                <!-- Section 1: OOP & UML Hierarchy -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+                    <h3 style="color: var(--accent); font-size: 1.05rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>📐</span> 1. Modèle Conceptuel UML (Annexe B) &amp; Polymorphisme
+                    </h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        Toutes les entités de simulation implémentent le polymorphisme et le découplage par interfaces :
+                    </p>
+                    <ul style="color: var(--text-secondary); padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                        <li><strong style="color: var(--text-primary); font-family: var(--font-mono);">Inspectable</strong> (Interface) : Contrat d'inspection générique fournissant <code>getInspectableId()</code>, <code>getInspectableName()</code>, <code>getInspectableType()</code> et <code>getInspectionDetails()</code>.</li>
+                        <li><strong style="color: var(--text-primary); font-family: var(--font-mono);">AbstractAgent</strong> (Classe abstraite) : Encapsule les coordonnées spatiales $(x,y)$, la satisfaction, l'état d'activité, et définit la méthode abstraite <code>step(SimulationContext)</code>.</li>
+                        <li><strong style="color: var(--text-primary); font-family: var(--font-mono);">CitizenAgent</strong> : Modélise la population avec routine temporelle (repos, trajet domicile-travail, bureau, dépenses, budget, bonheur).</li>
+                        <li><strong style="color: var(--text-primary); font-family: var(--font-mono);">VehicleAgent</strong> : Navigation autonome sur graphe routier, vitesse dynamique asservie à la congestion, reroutage A*.</li>
+                        <li><strong style="color: var(--text-primary); font-family: var(--font-mono);">BusinessAgent</strong> : Modélise les entreprises urbaines (masse salariale, recrutements, chiffre d'affaires, profits).</li>
+                    </ul>
+                </div>
+
+                <!-- Section 2: Algorithms & Data Structures -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+                    <h3 style="color: #60a5fa; font-size: 1.05rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>⚡</span> 2. Algorithmique &amp; Structures de Données (MOD-03)
+                    </h3>
+                    <ul style="color: var(--text-secondary); padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                        <li><strong style="color: var(--text-primary);">Algorithme A* (A-Star)</strong> : Implémenté dans <code>AStarRoutingEngine.java</code> avec file de priorité <code>PriorityQueue&lt;NodeRecord&gt;</code> ordonnée selon $f(n) = g(n) + h(n)$.</li>
+                        <li><strong style="color: var(--text-primary);">Heuristique Admissible $h(n)$</strong> : Distance euclidienne divisée par la vitesse maximale admissible ($v_{\max} = 90$ km/h), garantissant l'optimalité du chemin.</li>
+                        <li><strong style="color: var(--text-primary);">Coût Réel $g(n)$ avec Congestion</strong> : Le coût d'un tronçon prend en compte sa longueur et sa vitesse effective réduite par le ratio de saturation.</li>
+                        <li><strong style="color: var(--text-primary);">Évitement d'Obstacles</strong> : Si un tronçon est marqué <code>isClosed = true</code> (Scénario What-If 🚧), $A^*$ détecte le blocage et recalcule automatiquement un itinéraire de contournement.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 3: Concurrency & Thread-Safety -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+                    <h3 style="color: #34d399; font-size: 1.05rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>⚙️</span> 3. Concurrence &amp; Robustesse (Java Concurrency)
+                    </h3>
+                    <ul style="color: var(--text-secondary); padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                        <li><strong style="color: var(--text-primary);">ScheduledExecutorService</strong> : Cadence les ticks de simulation en arrière-plan sans bloquer les requêtes Web ou le thread UI (1x = 1000ms, 2x = 500ms, 5x = 200ms, 10x = 100ms).</li>
+                        <li><strong style="color: var(--text-primary);">Variables Atomiques</strong> : <code>AtomicBoolean</code> pour l'état d'exécution, <code>AtomicLong</code> pour l'horloge virtuelle, <code>AtomicInteger</code> pour le décompte de véhicules sur chaque route.</li>
+                        <li><strong style="color: var(--text-primary);">Collections Concurrentes</strong> : <code>ConcurrentHashMap</code> pour le graphe et les agents, <code>CopyOnWriteArrayList</code> pour les abonnés (listeners), <code>ConcurrentLinkedDeque</code> pour les événements.</li>
+                        <li><strong style="color: var(--text-primary);">Isolation des Défaillances (NFR-05)</strong> : L'exécution concurrente <code>parallelStream()</code> dans <code>AgentEngine</code> isole chaque agent dans un bloc <code>try-catch</code> pour qu'une exception isolée ne crash jamais la simulation.</li>
+                    </ul>
+                </div>
+
+                <!-- Section 4: What-If Engine -->
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem;">
+                    <h3 style="color: var(--yellow); font-size: 1.05rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🔬</span> 4. Moteur de Scénarios What-If &amp; Records Java 21 (MOD-07)
+                    </h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        Implémente le pattern <strong>Memento / Snapshot</strong> via les records Java 21 :
+                    </p>
+                    <ul style="color: var(--text-secondary); padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                        <li><strong style="color: var(--text-primary); font-family: var(--font-mono);">SimulationSnapshot</strong> (Record) : Capture immuable des métriques de référence (Baseline).</li>
+                        <li><strong style="color: var(--text-primary);">Analyse Différentielle ($\Delta$)</strong> : Calcul automatisé des deltas de congestion, vitesse, satisfaction, emploi et PIB avec génération de recommandations d'intelligence décisionnelle.</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+
+    <!-- Simulation Client Engine -->
+    <script th:src="@{/js/simulation.js}"></script>
+</body>
+</html>

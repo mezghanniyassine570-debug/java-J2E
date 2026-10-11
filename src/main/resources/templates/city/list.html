@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: header-head('AETHER - City Management')}">
+</head>
+<body class="theme-dark">
+    <div th:replace="~{fragments/header :: header-nav}"></div>
+
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">City Configurations</h1>
+                <p class="page-subtitle">Configured virtual cities and simulation topologies</p>
+            </div>
+            <a th:href="@{/cities/new}" class="btn btn-primary">+ Create City</a>
+        </div>
+
+        <div class="card table-card">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>City Name</th>
+                        <th>Citizens</th>
+                        <th>Vehicles</th>
+                        <th>Businesses</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="city : ${cities}">
+                        <td th:text="${city.id}">1</td>
+                        <td><strong th:text="${city.name}">Neo-Metropolis</strong></td>
+                        <td th:text="${city.totalPopulation}">12000</td>
+                        <td th:text="${city.totalVehicles}">4000</td>
+                        <td th:text="${city.totalBusinesses}">800</td>
+                        <td>
+                            <a th:href="@{'/cities/delete/' + ${city.id}}" class="btn-sm btn-danger" onclick="return confirm('Delete this city?');">Delete</a>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(cities)}">
+                        <td colspan="6" class="text-center">No cities found. Click "+ Create City" above to add one.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>

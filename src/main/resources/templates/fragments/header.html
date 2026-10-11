@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="header-head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title} ?: 'AETHER - Urban Simulation Engine'">AETHER</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+    <header th:fragment="header-nav" class="navbar">
+        <div class="nav-container">
+            <a th:href="@{/}" class="brand">
+                <span class="brand-icon">⚡</span>
+                <span class="brand-text">AETHER</span>
+                <span class="brand-badge">SIMULATOR</span>
+            </a>
+            <nav class="nav-links">
+                <a th:href="@{/}" class="nav-item">Simulation Cockpit</a>
+                <button type="button" id="btnToggleDefenseMode" class="theme-toggle-btn" title="Toggle Academic Defense Walkthrough">
+                    🎓 Mode Soutenance
+                </button>
+                <button type="button" id="btnOpenDocModal" class="nav-item nav-badge" style="background: rgba(2, 132, 199, 0.12); color: var(--accent); border-color: var(--border-accent); cursor: pointer;">
+                    📐 Architecture &amp; OOP
+                </button>
+                <button type="button" id="btnPrintReport" class="theme-toggle-btn" title="Generate Academic Audit Report">
+                    📄 Rapport PDF
+                </button>
+                <a th:href="@{/cities}" class="nav-item">Villes</a>
+                <a th:href="@{/h2-console}" target="_blank" class="nav-item nav-badge" title="Inspect persistent JPA tables">H2 DB</a>
+            </nav>
+        </div>
+    </header>
+</body>
+</html>

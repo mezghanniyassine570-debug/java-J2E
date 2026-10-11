@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/header :: header-head('AETHER - Create City')}">
+</head>
+<body class="theme-dark">
+    <div th:replace="~{fragments/header :: header-nav}"></div>
+
+    <div class="container container-sm">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">Create Simulation City</h1>
+                <p class="page-subtitle">Configure parameters for a new urban environment</p>
+            </div>
+            <a th:href="@{/cities}" class="btn btn-outline">&larr; Back to Cities</a>
+        </div>
+
+        <div class="card form-card">
+            <form th:action="@{/cities}" th:object="${city}" method="post">
+                <div class="form-group">
+                    <label for="name">City Name</label>
+                    <input type="text" id="name" th:field="*{name}" class="form-control" placeholder="e.g. Cyberia Prime" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="totalPopulation">Initial Citizen Count</label>
+                    <input type="number" id="totalPopulation" th:field="*{totalPopulation}" class="form-control" placeholder="10000" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="totalVehicles">Initial Vehicles Count</label>
+                    <input type="number" id="totalVehicles" th:field="*{totalVehicles}" class="form-control" placeholder="4000" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="totalBusinesses">Initial Businesses Count</label>
+                    <input type="number" id="totalBusinesses" th:field="*{totalBusinesses}" class="form-control" placeholder="800" required>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Create City</button>
+                    <a th:href="@{/cities}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/footer :: footer}"></div>
+</body>
+</html>
